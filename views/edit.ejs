@@ -1,26 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Home Page</title>
-  </head>
-  <body>
-    <nav>
-      <ul>
-        <li><a href="/">Home</a></li>
-        <li><a href="/register">Register</a></li>
-        <li><a href="/login">Login</a></li>
-        <li><a href="/admin">Admin</a></li>
-      </ul>
-    </nav>
-
-    <form action="/update/<%= user._id %>" method="post">
-      <h1>Register Page</h1>
-      <input type="text" value="<%= user.username %>" name="username" placeholder="Enter Username" />
-      <input type="text" value="<%= user.email %>" name="email" placeholder="Enter Email" />
-      <input type="password" name="password" value="<%= user.password %>" placeholder="Enter password" />
-      <button type="submit">Login</button>
-    </form>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Page</title>
+</head>
+<body>
+    <center>Register</center>
+    <center>
+        <form action="/update/<%= user._id%>" method="post">
+            <input value="<%= user.username %>" type="text" name="username" placeholder="Enter Username">
+            <input value="<%= user.email %>" type="email" name="email" placeholder="Enter Email">
+            <input value="<%= user.password %>" type="password" name="password" placeholder="Enter Password">
+            <button type="submit">Register</button>
+        </form>
+    </center>
+</body>
 </html>

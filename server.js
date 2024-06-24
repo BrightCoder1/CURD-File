@@ -1,134 +1,132 @@
-require("dotenv").config();
+// Create a server
 const express = require("express");
 const app = express();
-const port = process.env.PORT;
-const connectDB = require("./db");
-const DataUser = require("./dataSchema");
-const cookiesParser = require("cookie-parser");
+const port = 3400;
+const connectDB = require("./db/database");
+const Register = require("./db/schema");
+const cookiesparser = require("cookie-parser");
 
-app.use(
-  express.urlencoded({
-    extended: false,
-  })
-);
-app.use(express.static("public"));
 app.use(express.json());
 app.set("view engine", "ejs");
+app.use(express.static("public"));
+app.use(express.urlencoded({
+    extended: false
+}));
 
-// Create all route
-app.get("/", (req, res) => {
-  res.status(201).render("index");
-});
+
+
+app.get('/', (req, res) => {
+    res.status(201).render("index");
+})
 
 app.get("/register", (req, res) => {
-  res.status(201).render("register");
-});
+    res.status(201).render("register")
+})
 
 app.post("/register", async (req, res) => {
-  try {
-    const email = req.body.email;
-    const userExist = await DataUser.findOne({ email: email });
-    console.log(userExist);
-    if (!userExist) {
-      const fillDate = new DataUser({
-        username: req.body.username,
-        email: req.body.email,
-        password: req.body.password,
-      });
+    try {
+        const email = req.body.email;
+        const password = req.body.password;
+        // console.log(email);
+        const userExist = await Register.findOne({ email: email });
 
-      // Generate Token
-      const token = await fillDate.generateToken();
-      console.log("Server Token", token);
-
-      // store token on server
-      res.cookie("jwt", token, {
-        expires: new Date(Date.now() + 60000),
-        httpOnly: true,
-      });
-
-      const storeData = await fillDate.save();
-      console.log("Store Data successfull..");
-      res.status(201).render("index");
-    } else {
-      res.json({ msg: "User Already Exist.." });
+        if (!userExist) {
+            const Data = new Register({
+                username: req.body.username,
+                email: req.body.email,
+                password: req.body.password
+            })
+            // Generate token
+            const token = await Data.generateToken();
+            // console.log(token);
+            const datasave = await Data.save();
+            console.log(datasave);
+            // cookies store on server 
+            res.cookie("Register Cookies",token,{
+                expires: new Date(Date.now() + 60000),
+                httpOnly:true
+            });
+            res.status(201).redirect("/");
+        }
+        else {
+            res.json({ msg: "User Already Exists" });
+        }
+    } catch (error) {
+        console.log(error);
     }
-  } catch (error) {
-    console.log(error);
-  }
-});
+})
+
 
 app.get("/login", (req, res) => {
-  res.status(201).render("login");
-});
+    res.status(201).render("login");
+})
 
 app.post("/login", async (req, res) => {
-  try {
-    const email = req.body.email;
-    const DB_email = await DataUser.findOne({ email: email });
-    const password = req.body.password;
+    try {
+        const email = req.body.email;
+        const password = req.body.password;
+        const user = await Register.findOne({ email, password });
+        // Create a login token
+        if (!user) {
+            res.status(401).json({ msg: "Invalid Details" });
+        }
+        else {
+            const token = await user.generateToken();
+            console.log(token);
+            
+            // set cookies of server
 
-    if (DB_email.password === password) {
-      // generate token
-      const token = await DB_email.generateToken();
-      console.log("Login Token: ", token);
-
-      //store login token
-      res.cookie("loginjwt", token, {
-        expires: new Date(Date.now() + 60000),
-        httpOnly: true,
-      });
-
-      res.status(201).render("index");
-    } else {
-      res.json({ msg: "Invalid Details" });
+            res.cookie("login",token,{
+                expires: new Date(Date.now() + 60000),
+                httpOnly:true
+            });
+            res.status(201).redirect("/");
+        }
+    } catch (error) {
+        console.log(error);
     }
-  } catch (error) {
-    console.log("login error", error);
-  }
-});
+})
 
+
+// Admin
 app.get("/admin", async (req, res) => {
-  const adminData = await DataUser.find({});
-  res.status(201).render("admin", {
-    users: adminData,
-  });
-});
-
-app.get("/edit/:id", async (req, res) => {
-  const { id } = req.params;
-  const editData = await DataUser.findById({ _id: id });
-
-  if (editData == null) {
-    res.redirect("/");
-  } else {
-    res.render("edit", {
-      user: editData,
+    const data = await Register.find({});
+    res.status(201).render("admin", {
+        users: data
     });
-  }
-});
+})
 
-app.post("/update/:id", async (req, res) => {
-  const { id } = req.params;
-  const { username, email, password } = req.body;
+// get Edit file
+app.get("/edit/:id", async (req, res) => {
+    const { id } = req.params;
+    const editData = await Register.findById({ _id: id });
 
-  const updateData = await DataUser.findByIdAndUpdate(
-    { _id: id },
-    { username, email, password },
-    {
-      new: true,
+    if (editData == null) {
+        res.redirect("/");
+    } else {
+        res.render("edit", {
+            user: editData
+        })
     }
-  );
-  res.redirect("/");
-});
+})
 
-app.get("/delete/:id", async (req, res) => {
-  const { id } = req.params;
-  const deleteData = await DataUser.findByIdAndDelete({ _id: id });
-  res.redirect("/admin");
-});
+// Update Data
+app.post("/update/:id", async (req, res) => {
+    const { id } = req.params;
+    const { username, email, password } = req.body;
+    const updateData = await Register.findByIdAndUpdate({ _id: id }, { username, email, password }, { new: true })
+    res.redirect("/admin");
+})
 
+
+// Delete Date
+app.get("/delete/:id",async (req, res) => {
+    const {id} = req.params;
+    const deleteData = await Register.findByIdAndDelete({_id:id});
+    res.redirect("/admin");
+})
 connectDB().then(() => {
-  app.listen(port, () => {
-    console.log(`http://localhost:${port}`);
-  });
-});
+    app.listen(port, () => {
+        console.log(`http://localhost:${port}`);
+    })
+})
